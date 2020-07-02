@@ -1,6 +1,6 @@
-# rt-in-weekend
+# rt-next-week
 
-Implementation of Ray Tracing in One Weekend with Clojure
+Implementation of Ray Tracing The Next Week with Clojure
 
 ## Motivation
 
@@ -9,7 +9,6 @@ learn Clojure and I think a ray tracer is a fun project to do so.
 
 ## References:
 
-1. [Ray Tracing in One Weekend](https://raytracing.github.io/books/RayTracingInOneWeekend.html)
-2. [raytraclj - Other implementation in Clojure I took a look at](https://github.com/agrison/raytraclj)
-3. [Clojure2d examples](https://github.com/Clojure2D/clojure2d-examples/tree/master/src/rt_in_weekend)
+1. [Ray Tracing The Next Week](https://raytracing.github.io/books/RayTracingTheNextWeek.html)
+2. [Previous code for Ray Tracing in a Weekend](https://github.com/ElHacker/rt-in-weekend-clojure)
 
