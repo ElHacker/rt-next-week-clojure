@@ -4,7 +4,8 @@
             [rt-in-weekend.ray :as ray]
             [rt-in-weekend.hittable :as hittable]
             [rt-in-weekend.camera :as camera]
-            [rt-in-weekend.material :as material]))
+            [rt-in-weekend.material :as material]
+            [rt-in-weekend.util :as util]))
 
 (defn ppm-header [width height]
   (str "P3\n" width " " height "\n255\n"))
@@ -48,7 +49,13 @@
       (if (> (vec/length (vec/- center [4 0.2 0])) 0.9)
         (cond
           (< choose-mat 0.8) ; diffuse
-          (swap! world conj (hittable/->Sphere center 0.2 (material/->Lambertian [(drand) (drand) (drand)])))
+          (swap! world conj (hittable/->MovingSphere
+                              center
+                              (vec/+ center [0 (util/rand-in-range 0 0.5) 0])
+                              0.0 ; t0
+                              1.0 ; t1
+                              0.2 ; radius
+                              (material/->Lambertian [(drand) (drand) (drand)])))
           (< choose-mat 0.95) ;metal
           (swap! world conj (hittable/->Sphere center 0.2 (material/->Metal [(* 0.5 (inc (rand)))
                                                                                (* 0.5 (inc (rand)))
@@ -72,9 +79,9 @@
         lookat [0 0 0]
         vup [0 1 0]
         dist-to-focus 10.0
-        aperture 0.1
+        aperture 0.0
         world (make-world)
-        cam (camera/make lookfrom lookat vup 20 aspect-ratio aperture dist-to-focus)]
+        cam (camera/make lookfrom lookat vup 20 aspect-ratio aperture dist-to-focus 0.0 1.0)]
     (raytrace image-width image-height
               (for [j (range (dec image-height) -1 -1)
                     i (range 0 image-width)
@@ -84,7 +91,7 @@
                           ig (int (* 255.999 (vec/y corrected-color)))
                           ib (int (* 255.999 (vec/z corrected-color)))]]
                 (pixel-line ir ig ib))
-              "./images/final-scene")))
+              "./images/bouncing-spheres")))
 
 
 (defn create-ppm []

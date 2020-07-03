@@ -1,14 +1,17 @@
 (ns rt-in-weekend.ray
   (:require [rt-in-weekend.vec :as vec]))
 
-(defn make [origin direction]
-  {:origin origin :direction direction})
+(defn make [origin direction timestamp]
+  {:origin origin :direction direction :timestamp timestamp})
 
 (defn origin [ray]
   (:origin ray))
 
 (defn direction [ray]
   (:direction ray))
+
+(defn timestamp [ray]
+  (:timestamp ray))
 
 (defn point-at [ray t]
   (vec/+ (origin ray)

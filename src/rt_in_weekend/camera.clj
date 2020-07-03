@@ -1,6 +1,7 @@
 (ns rt-in-weekend.camera
   (:require [rt-in-weekend.ray :as ray]
-            [rt-in-weekend.vec :as vec]))
+            [rt-in-weekend.vec :as vec]
+            [rt-in-weekend.util :as util]))
 
 (defn degrees-to-radians [degrees]
   (/ (* degrees Math/PI) 180))
@@ -13,7 +14,7 @@
 
 ; vfov - vertical field of view in degrees.
 ; vup - view up
-(defn make [lookfrom lookat vup vfov aspect-ratio aperture focus-dist]
+(defn make [lookfrom lookat vup vfov aspect-ratio aperture focus-dist t0 t1]
   (let [theta (degrees-to-radians vfov)
         h (Math/tan (/ theta 2))
         viewport-height (* 2.0 h)
@@ -39,9 +40,12 @@
      :lens-radius lens-radius
      :u u
      :v v
-     :w w}))
+     :w w
+     ; time0 and time1 are shutter open/close times respectively
+     :time0 t0
+     :time1 t1}))
 
-(defn get-ray [{:keys [lower-left-corner horizontal vertical origin lens-radius u v]} s t]
+(defn get-ray [{:keys [lower-left-corner horizontal vertical origin lens-radius u v w time0 time1]} s t]
   (let [rd (vec/* (random-in-unit-disk) lens-radius)
         offset (vec/+ (vec/* u (vec/x rd)) (vec/* v (vec/y rd)))]
     (ray/make (vec/+ origin offset)
@@ -49,4 +53,5 @@
                                    (vec/+ (vec/* horizontal s)
                                           (vec/* vertical t)))
                             origin)
-                     offset))))
+                     offset)
+              (util/rand-in-range time0 time1))))

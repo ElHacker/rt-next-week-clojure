@@ -46,7 +46,7 @@
   Material
   (scatter [this r-in rec]
     (let [target (vec/+ (vec/+ (:p rec) (:normal rec)) (random-unit-vector))
-          scattered (ray/make (:p rec) (vec/- target (:p rec)))]
+          scattered (ray/make (:p rec) (vec/- target (:p rec)) (:timestamp r-in))]
       {:ok true :attenuation (:albedo this) :scattered scattered})))
 
 (defrecord Metal [albedo f]
@@ -54,7 +54,7 @@
   (scatter [this r-in rec]
     (let [fuzz (if (< f 1) f 1)
           reflected (vec/reflect (vec/unit-vector (:direction r-in)) (:normal rec))
-          scattered (ray/make (:p rec) (vec/+ reflected (vec/* (random-in-unit-sphere) fuzz)))
+          scattered (ray/make (:p rec) (vec/+ reflected (vec/* (random-in-unit-sphere) fuzz)) (:timestamp r-in))
           final (vec/dot (:direction scattered) (:normal rec))]
       {:ok (pos? final) :attenuation (:albedo this) :scattered scattered})))
 
@@ -70,10 +70,11 @@
           refracted-or-reflected (if can-refract
                       (vec/refract unit-direction (:normal rec) etai-over-etat)
                       (vec/reflect unit-direction (:normal rec)))
-          scattered (ray/make (:p rec) refracted-or-reflected)
+          scattered (ray/make (:p rec) refracted-or-reflected (:timestamp r-in))
           reflect-prob (schlick cos-theta etai-over-etat)]
       (if (< (rand) reflect-prob)
         {:ok true :attenuation attenuation :scattered (ray/make
                                                         (:p rec)
-                                                        (vec/reflect unit-direction (:normal rec)))}
+                                                        (vec/reflect unit-direction (:normal rec))
+                                                        (:timestamp r-in))}
         {:ok true :attenuation attenuation :scattered scattered}))))
