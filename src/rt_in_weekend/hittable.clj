@@ -73,6 +73,21 @@
           output-box (aabb/surrounding-box box0 box1)]
       {:has-bbox true :output-box output-box})))
 
+(defrecord bvh-node [hittable-objects start end time0 time1 left right box]
+  Hittable
+  (center [this timestamp] nil)
+
+  (hit [this r t-min t-max]
+    (if (not (aabb/hit-pixar box r t-min t-min))
+      false
+      (let [rec (hit this r t-min t-max) ; TODO(elhacker): I don't think I should compute hit on this.
+            hit-left (hit left r t-min t-max)
+            hit-right (hit right r t-min (if hit-left (:t rec) t-max))]
+        (or hit-left hit-right))))
+
+  (bounding-box [this t0 t1]
+    {:has-bbox true :output-box box}))
+
 (defn hittable-list [world r t-min t-max]
   (let [closest-so-far (atom t-max)
         record (atom nil)]
@@ -84,7 +99,41 @@
             (reset! record rec)))))
     @record))
 
-(defn hittable-list-bounding-box [world out-box t0 t1]
+(defn bvh-node-split-build [{:keys hittable-objects start end time0 time1}]
+  (let [axis (rand-int 3)
+        comparator-fn (cond
+                        (== axis 0) box-x-compare
+                        (== axis 1) box-y-compare
+                        :else box-z-compare)
+        object-span (- end start)
+        left (atom nil)
+        right (atom nil)]
+    (do
+      (cond (== object-span 1) (do
+                                 (reset! left (get hittable-objects start))
+                                 (reset! right (get hittable-objects start)))
+            (== object-span 2) (if (comparator-fn (get hittable-objects start) (get hittable-objects (inc start)))
+                                 (do
+                                   (reset! left (get hittable-objects start))
+                                   (reset! right (get hittable-objects (inc start))))
+                                 (do
+                                   (reset! left (get hittable-objects (inc start)))
+                                   (reset! right (get hittable-objects start))))
+            :else (do
+                    (let [sorted (sort comparator-fn hittable-objects)
+                          mid (/ (+ start object-span) 2)]
+                      (do
+                        (reset! left (bvh-node-split-build sorted start mid time0 time1))
+                        (reset! right (bvh-node-split-build sorted mid end time0 time1))))))
+      (let [box-left (bounding-box @left time0 time1)
+            box-right (bounding-box @right time0 time1)]
+        (if (or (not (:has-bbox box-left))
+                (not (:has-bbox box-right)))
+          (throw (Exception "No bounding box in bhv-node constructor"))
+          ; Return an instance of bhv-node
+          (->bhv-node sorted start end time0 time1 left right (surrounding-box box-left box-right)))))))
+
+(defn hittable-list-bounding-box [world t0 t1 out-box]
   (if (empty? world)
     false
     (let [output-box (atom out-box)
