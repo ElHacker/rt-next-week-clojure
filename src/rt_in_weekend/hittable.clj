@@ -129,7 +129,7 @@
             box-right (bounding-box @right time0 time1)]
         (if (or (not (:has-bbox box-left))
                 (not (:has-bbox box-right)))
-          (throw (Exception "No bounding box in bhv-node constructor"))
+          (throw (Exception "No bounding box in bvh-node constructor"))
           ; Return an instance of bhv-node
           (->bhv-node sorted start end time0 time1 left right (surrounding-box box-left box-right)))))))
 
@@ -146,3 +146,20 @@
               (reset! output-box (if first-box temp-box (aabb/surrounding-box output-box temp-box)))
               (reset! first-box false)))))
       {:has-bbox true :output-box @output-box})))
+
+(defn box-compare [hittable-a hittable-b axis]
+  (let [box-a (bounding-box hittable-a 0 0)
+        box-b (bounding-box hittable-b 0 0)]
+    (if (or (not (:has-bbox box-a))
+            (not (:has-bbox box-b)))
+      (throw Exeption "No bounding box in bvh-node constructor")
+      (compare (get (mini (:output-box box-a)) axis) (get (mini (:output-box box-b)) axis)))))
+
+(defn box-x-compare [hittable-a hittable-b]
+  (box-compare hittable-a hittable-b 0))
+
+(defn box-y-compare [hittable-a hittable-b]
+  (box-compare hittable-a hittable-b 1))
+
+(defn box-z-compare [hittable-a hittable-b]
+  (box-compare hittable-a hittable-b 2))
