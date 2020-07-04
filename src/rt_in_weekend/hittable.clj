@@ -99,7 +99,7 @@
             (reset! record rec)))))
     @record))
 
-(defn bvh-node-split-build [{:keys hittable-objects start end time0 time1}]
+(defn bvh-node-split-build [hittable-objects start end time0 time1]
   (let [axis (rand-int 3)
         comparator-fn (cond
                         (== axis 0) box-x-compare
@@ -129,9 +129,9 @@
             box-right (bounding-box @right time0 time1)]
         (if (or (not (:has-bbox box-left))
                 (not (:has-bbox box-right)))
-          (throw (Exception "No bounding box in bvh-node constructor"))
-          ; Return an instance of bhv-node
-          (->bhv-node sorted start end time0 time1 left right (surrounding-box box-left box-right)))))))
+          (throw (Exception. "No bounding box in bvh-node constructor"))
+          ; Return an instance of bvh-node
+          (->bvh-node hittable-objects start end time0 time1 left right (aabb/surrounding-box box-left box-right)))))))
 
 (defn hittable-list-bounding-box [world t0 t1 out-box]
   (if (empty? world)
@@ -152,8 +152,8 @@
         box-b (bounding-box hittable-b 0 0)]
     (if (or (not (:has-bbox box-a))
             (not (:has-bbox box-b)))
-      (throw Exeption "No bounding box in bvh-node constructor")
-      (compare (get (mini (:output-box box-a)) axis) (get (mini (:output-box box-b)) axis)))))
+      (throw (Exception. "No bounding box in bvh-node constructor"))
+      (compare (get (aabb/mini (:output-box box-a)) axis) (get (aabb/mini (:output-box box-b)) axis)))))
 
 (defn box-x-compare [hittable-a hittable-b]
   (box-compare hittable-a hittable-b 0))
