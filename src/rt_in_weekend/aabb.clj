@@ -45,3 +45,17 @@
           false
           (recur (inc i)))
         true))))
+
+(defn surrounding-box [box0 box1]
+  (let [small [(min (vec/x (mini box0))
+                    (vec/x (mini box1)))
+               (min (vec/y (mini box0))
+                    (vec/y (mini box1)))
+               (min (vec/z (mini box0))
+                    (vec/z (mini box1)))]
+        big [(max (vec/x (maxi box0))
+                  (vec/x (maxi box1)))
+             (max (vec/y (maxi box0))
+                  (vec/y (maxi box1)))
+             (max (vec/z (maxi box0))
+                  (vec/z (maxi box1)))]]))
