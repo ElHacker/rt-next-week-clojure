@@ -99,6 +99,23 @@
             (reset! record rec)))))
     @record))
 
+(defn box-compare [hittable-a hittable-b axis]
+  (let [box-a (bounding-box hittable-a 0 0)
+        box-b (bounding-box hittable-b 0 0)]
+    (if (or (not (:has-bbox box-a))
+            (not (:has-bbox box-b)))
+      (throw (Exception. "No bounding box in bvh-node constructor"))
+      (compare (get (aabb/mini (:output-box box-a)) axis) (get (aabb/mini (:output-box box-b)) axis)))))
+
+(defn box-x-compare [hittable-a hittable-b]
+  (box-compare hittable-a hittable-b 0))
+
+(defn box-y-compare [hittable-a hittable-b]
+  (box-compare hittable-a hittable-b 1))
+
+(defn box-z-compare [hittable-a hittable-b]
+  (box-compare hittable-a hittable-b 2))
+
 (defn bvh-node-split-build [hittable-objects start end time0 time1]
   (let [axis (rand-int 3)
         comparator-fn (cond
@@ -147,19 +164,3 @@
               (reset! first-box false)))))
       {:has-bbox true :output-box @output-box})))
 
-(defn box-compare [hittable-a hittable-b axis]
-  (let [box-a (bounding-box hittable-a 0 0)
-        box-b (bounding-box hittable-b 0 0)]
-    (if (or (not (:has-bbox box-a))
-            (not (:has-bbox box-b)))
-      (throw (Exception. "No bounding box in bvh-node constructor"))
-      (compare (get (aabb/mini (:output-box box-a)) axis) (get (aabb/mini (:output-box box-b)) axis)))))
-
-(defn box-x-compare [hittable-a hittable-b]
-  (box-compare hittable-a hittable-b 0))
-
-(defn box-y-compare [hittable-a hittable-b]
-  (box-compare hittable-a hittable-b 1))
-
-(defn box-z-compare [hittable-a hittable-b]
-  (box-compare hittable-a hittable-b 2))
