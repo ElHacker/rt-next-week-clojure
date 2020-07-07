@@ -1,6 +1,7 @@
 (ns rt-in-weekend.material
   (:require [rt-in-weekend.vec :as vec]
-            [rt-in-weekend.ray :as ray]))
+            [rt-in-weekend.ray :as ray]
+            [rt-in-weekend.texture :as texture]))
 
 ; Diffuse material hack
 (defn random-in-unit-sphere []
@@ -46,8 +47,9 @@
   Material
   (scatter [this r-in rec]
     (let [target (vec/+ (vec/+ (:p rec) (:normal rec)) (random-unit-vector))
-          scattered (ray/make (:p rec) (vec/- target (:p rec)) (:timestamp r-in))]
-      {:ok true :attenuation (:albedo this) :scattered scattered})))
+          scattered (ray/make (:p rec) (vec/- target (:p rec)) (:timestamp r-in))
+          attenuation (texture/value (:albedo this) (:u rec) (:v rec) (:p rec))]
+      {:ok true :attenuation attenuation :scattered scattered})))
 
 (defrecord Metal [albedo f]
   Material

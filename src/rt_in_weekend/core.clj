@@ -5,6 +5,7 @@
             [rt-in-weekend.hittable :as hittable]
             [rt-in-weekend.camera :as camera]
             [rt-in-weekend.material :as material]
+            [rt-in-weekend.texture :as texture]
             [rt-in-weekend.util :as util]))
 
 (defn ppm-header [width height]
@@ -40,7 +41,7 @@
     (vec// @color (float num-samples))))
 
 (defn make-world []
-  (let [world (atom [(hittable/->Sphere [0 -1000 0] 1000 (material/->Lambertian [0.5 0.5 0.5]))])
+  (let [world (atom [(hittable/->Sphere [0 -1000 0] 1000 (material/->Lambertian (texture/->SolidColor [0.5 0.5 0.5])))])
         drand #(* (rand) (rand))]
     (doseq [a (range -11 11)
             b (range -11 11)
@@ -55,7 +56,7 @@
                               0.0 ; t0
                               1.0 ; t1
                               0.2 ; radius
-                              (material/->Lambertian [(drand) (drand) (drand)])))
+                              (material/->Lambertian (texture->SolidColor [(drand) (drand) (drand)]))))
           (< choose-mat 0.95) ;metal
           (swap! world conj (hittable/->Sphere center 0.2 (material/->Metal [(* 0.5 (inc (rand)))
                                                                                (* 0.5 (inc (rand)))
@@ -65,7 +66,7 @@
           (swap! world conj (hittable/->Sphere center 0.2 (material/->Dialectric 1.5)))
           )))
     (swap! world conj (hittable/->Sphere [0 1 0] 1.0 (material/->Dialectric 1.5)))
-    (swap! world conj (hittable/->Sphere [-4 1 0] 1.0 (material/->Lambertian [0.4 0.2 0.1])))
+    (swap! world conj (hittable/->Sphere [-4 1 0] 1.0 (material/->Lambertian (texture->SolidColor [0.4 0.2 0.1]))))
     (swap! world conj (hittable/->Sphere [4 1 0] 1.0 (material/->Metal [0.7 0.6 0.5] 0.0)))
     @world))
 

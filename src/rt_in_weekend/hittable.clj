@@ -1,18 +1,19 @@
 (ns rt-in-weekend.hittable
   (:require [rt-in-weekend.vec :as vec]
             [rt-in-weekend.ray :as ray]
-            [rt-in-weekend.aabb :as aabb]))
+            [rt-in-weekend.aabb :as aabb]
+            [rt-in-weekend.util :as util]))
 
 (defprotocol Hittable
   (hit [this r t-min t-max])
   (bounding-box [this t0 t1])
   (center [this timestamp]))
 
-(defn hit-record [r t center radius material]
+(defn hit-record [r t u v center radius material]
   (let [p (ray/point-at r t)
         outward-normal (vec// (vec/- p center) radius)
         front-face (< (vec/dot (:direction r) outward-normal) 0)]
-    {:t t :p p :normal (if front-face outward-normal (vec/- outward-normal)) :material material :front-face front-face}))
+    {:t t :u u :v v :p p :normal (if front-face outward-normal (vec/- outward-normal)) :material material :front-face front-face}))
 
 (defrecord Sphere [center radius material]
   Hittable
@@ -21,15 +22,18 @@
           a (vec/length-squared (ray/direction r))
           half-b (vec/dot oc (ray/direction r))
           c (- (vec/length-squared oc) (* (:radius this) (:radius this)))
-          discriminant (- (* half-b half-b) (* a c))]
+          discriminant (- (* half-b half-b) (* a c))
+          sphere-uv (util/get-sphere-uv (vec// (:center this) (:radius this)))
+          u (:u sphere-uv)
+          v (:v sphere-uv)]
       (when (pos? discriminant)
         (let [root (Math/sqrt discriminant)
               temp (/ (- (- half-b) root) a)]
           (if (and (< temp t-max) (> temp t-min))
-            (hit-record r temp (:center this) (:radius this) (:material this))
+            (hit-record r temp u v (:center this) (:radius this) (:material this))
             (let [temp (/ (+ (- half-b) root) a)]
               (when (and (< temp t-max) (> temp t-min))
-                (hit-record r temp (:center this) (:radius this) (:material this)))))))))
+                (hit-record r temp u v (:center this) (:radius this) (:material this)))))))))
 
   (bounding-box [this t0 t1]
     (let [output-box (aabb/make (vec/- (:center this) [(:radius this) (:radius this) (:radius this)])
