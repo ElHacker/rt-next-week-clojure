@@ -9,7 +9,8 @@
   (bounding-box [this t0 t1])
   (center [this timestamp]))
 
-(defn hit-record [r t u v center radius material]
+ ; TODO(elhacker): Update all the callers to hit-record to provide a value for uv
+(defn hit-record [r t center radius material & {:keys [u v] :or {u 0 v 0}}]
   (let [p (ray/point-at r t)
         outward-normal (vec// (vec/- p center) radius)
         front-face (< (vec/dot (:direction r) outward-normal) 0)]
