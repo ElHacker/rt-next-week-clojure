@@ -41,7 +41,8 @@
     (vec// @color (float num-samples))))
 
 (defn make-world []
-  (let [world (atom [(hittable/->Sphere [0 -1000 0] 1000 (material/->Lambertian (texture/->SolidColor [0.5 0.5 0.5])))])
+  (let [checker-texture (texture/->CheckerTexture [0.2 0.3 0.1] [0.9 0.9 0.9])
+        world (atom [(hittable/->Sphere [0 -1000 0] 1000 (material/->Lambertian checker-texture))])
         drand #(* (rand) (rand))]
     (doseq [a (range -11 11)
             b (range -11 11)
@@ -56,7 +57,7 @@
                               0.0 ; t0
                               1.0 ; t1
                               0.2 ; radius
-                              (material/->Lambertian (texture->SolidColor [(drand) (drand) (drand)]))))
+                              (material/->Lambertian (texture/->SolidColor [(drand) (drand) (drand)]))))
           (< choose-mat 0.95) ;metal
           (swap! world conj (hittable/->Sphere center 0.2 (material/->Metal [(* 0.5 (inc (rand)))
                                                                                (* 0.5 (inc (rand)))
@@ -66,7 +67,7 @@
           (swap! world conj (hittable/->Sphere center 0.2 (material/->Dialectric 1.5)))
           )))
     (swap! world conj (hittable/->Sphere [0 1 0] 1.0 (material/->Dialectric 1.5)))
-    (swap! world conj (hittable/->Sphere [-4 1 0] 1.0 (material/->Lambertian (texture->SolidColor [0.4 0.2 0.1]))))
+    (swap! world conj (hittable/->Sphere [-4 1 0] 1.0 (material/->Lambertian (texture/->SolidColor [0.4 0.2 0.1]))))
     (swap! world conj (hittable/->Sphere [4 1 0] 1.0 (material/->Metal [0.7 0.6 0.5] 0.0)))
     @world))
 
@@ -92,7 +93,7 @@
                           ig (int (* 255.999 (vec/y corrected-color)))
                           ib (int (* 255.999 (vec/z corrected-color)))]]
                 (pixel-line ir ig ib))
-              "./images/bouncing-spheres")))
+              "./images/checkered")))
 
 
 (defn create-ppm []

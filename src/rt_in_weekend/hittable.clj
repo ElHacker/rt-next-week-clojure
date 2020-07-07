@@ -23,17 +23,15 @@
           half-b (vec/dot oc (ray/direction r))
           c (- (vec/length-squared oc) (* (:radius this) (:radius this)))
           discriminant (- (* half-b half-b) (* a c))
-          sphere-uv (util/get-sphere-uv (vec// (:center this) (:radius this)))
-          u (:u sphere-uv)
-          v (:v sphere-uv)]
+          uv (util/get-sphere-uv (vec// (:center this) (:radius this)))]
       (when (pos? discriminant)
         (let [root (Math/sqrt discriminant)
               temp (/ (- (- half-b) root) a)]
           (if (and (< temp t-max) (> temp t-min))
-            (hit-record r temp u v (:center this) (:radius this) (:material this))
+            (hit-record r temp (:u uv) (:v uv) (:center this) (:radius this) (:material this))
             (let [temp (/ (+ (- half-b) root) a)]
               (when (and (< temp t-max) (> temp t-min))
-                (hit-record r temp u v (:center this) (:radius this) (:material this)))))))))
+                (hit-record r temp (:u uv) (:v uv) (:center this) (:radius this) (:material this)))))))))
 
   (bounding-box [this t0 t1]
     (let [output-box (aabb/make (vec/- (:center this) [(:radius this) (:radius this) (:radius this)])
