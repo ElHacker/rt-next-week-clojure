@@ -41,7 +41,9 @@
     (vec// @color (float num-samples))))
 
 (defn make-world []
-  (let [checker-texture (texture/->CheckerTexture [0.2 0.3 0.1] [0.9 0.9 0.9])
+  (let [checker-texture (texture/->CheckerTexture
+                          (texture/->SolidColor [0.2 0.3 0.1])
+                          (texture/->SolidColor [0.9 0.9 0.9]))
         world (atom [(hittable/->Sphere [0 -1000 0] 1000 (material/->Lambertian checker-texture))])
         drand #(* (rand) (rand))]
     (doseq [a (range -11 11)

@@ -29,10 +29,10 @@
         (let [root (Math/sqrt discriminant)
               temp (/ (- (- half-b) root) a)]
           (if (and (< temp t-max) (> temp t-min))
-            (hit-record r temp (:u uv) (:v uv) (:center this) (:radius this) (:material this))
+            (hit-record r temp (:center this) (:radius this) (:material this) (:u uv) (:v uv))
             (let [temp (/ (+ (- half-b) root) a)]
               (when (and (< temp t-max) (> temp t-min))
-                (hit-record r temp (:u uv) (:v uv) (:center this) (:radius this) (:material this)))))))))
+                (hit-record r temp (:center this) (:radius this) (:material this) (:u uv) (:v uv)))))))))
 
   (bounding-box [this t0 t1]
     (let [output-box (aabb/make (vec/- (:center this) [(:radius this) (:radius this) (:radius this)])
