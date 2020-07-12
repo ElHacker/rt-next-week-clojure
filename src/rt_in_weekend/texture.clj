@@ -1,6 +1,7 @@
 (ns rt-in-weekend.texture
   (:require [clojure.algo.generic.math-functions :as math]
-            [rt-in-weekend.vec :as vec]))
+            [rt-in-weekend.vec :as vec]
+            [rt-in-weekend.perlin :as perlin]))
 
 (defprotocol Texture
   (value [this u v point]))
@@ -17,3 +18,8 @@
       (if (neg? sines)
         (value odd u v point)
         (value even u v point)))))
+
+(defrecord NoiseTexture []
+  Texture
+  (value [this u v point]
+    (vec/* [1.0 1.0 1.0] (perlin/noise point))))
