@@ -158,7 +158,7 @@
                           ig (int (* 255.999 (vec/y corrected-color)))
                           ib (int (* 255.999 (vec/z corrected-color)))]]
                 (pixel-line ir ig ib))
-              "./images/perlin-smooth-spheres")))
+              "./images/perlin-hermitian-smooth-spheres")))
 
 
 (defn create-ppm []
