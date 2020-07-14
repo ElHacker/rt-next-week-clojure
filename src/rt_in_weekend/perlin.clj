@@ -38,15 +38,15 @@
         u (- (vec/x point) (math/floor (vec/x point)))
         v (- (vec/y point) (math/floor (vec/y point)))
         w (- (vec/z point) (math/floor (vec/z point)))
-        i (int (vec/x point))
-        j (int (vec/y point))
-        k (int (vec/z point))
+        i (math/floor (vec/x point))
+        j (math/floor (vec/y point))
+        k (math/floor (vec/z point))
         c (atom (vec (replicate 2 (vec (replicate 2 [0 0])))))]
     (doseq [di (range 2)]
       (doseq [dj (range 2)]
         (doseq [dk (range 2)]
-          (let [index (bit-xor (get (:perm-x perlin-res) (bit-and (+ i di) 255))
-                               (get (:perm-y perlin-res) (bit-and (+ j dj) 255))
-                               (get (:perm-z perlin-res) (bit-and (+ k dk) 255)))]
+          (let [index (bit-xor (get (:perm-x perlin-res) (bit-and (int (+ i di)) 255))
+                               (get (:perm-y perlin-res) (bit-and (int (+ j dj)) 255))
+                               (get (:perm-z perlin-res) (bit-and (int (+ k dk)) 255)))]
             (swap! c assoc-in [di dj dk] (get (:ranfloat perlin-res) index))))))
     (trilinear-interpolation @c u v w)))
