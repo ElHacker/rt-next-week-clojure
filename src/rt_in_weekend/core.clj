@@ -131,7 +131,7 @@
               "./images/checkered-spheres")))
 
 (defn make-perlin-world []
-  (let [perlin-texture (texture/->NoiseTexture)
+  (let [perlin-texture (texture/->NoiseTexture 10)
         world (atom [(hittable/->Sphere [0 -1000 0] 1000 (material/->Lambertian perlin-texture))
                      (hittable/->Sphere [0 2 0] 2 (material/->Lambertian perlin-texture))])]
     @world))
@@ -158,7 +158,7 @@
                           ig (int (* 255.999 (vec/y corrected-color)))
                           ib (int (* 255.999 (vec/z corrected-color)))]]
                 (pixel-line ir ig ib))
-              "./images/perlin-hermitian-smooth-spheres")))
+              "./images/perlin-hermitian-high-frequency-smooth-spheres")))
 
 
 (defn create-ppm []

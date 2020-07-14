@@ -19,7 +19,7 @@
         (value odd u v point)
         (value even u v point)))))
 
-(defrecord NoiseTexture []
+(defrecord NoiseTexture [scale]
   Texture
   (value [this u v point]
-    (vec/* [1.0 1.0 1.0] (perlin/noise point))))
+    (vec/* [1.0 1.0 1.0] (perlin/noise (vec/* point scale)))))
