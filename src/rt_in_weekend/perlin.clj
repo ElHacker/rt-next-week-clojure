@@ -6,14 +6,14 @@
 (def point-count 256)
 
 (defn trilinear-interpolation [c u v w]
-  (let [accum (atom 0)]
+  (let [accum (atom 0.0)]
     (doseq [i (range 2)]
       (doseq [j (range 2)]
         (doseq [k (range 2)]
-          (reset! accum ( + @accum (* (+ (* i u) (* (- 1 i) (- 1 u)))
-                                      (+ (* j v) (* (- 1 j) (- 1 v)))
-                                      (+ (* k w) (* (- 1 k) (- 1 w)))
-                                      (get-in c [i j k])))))))
+          (swap! accum + (* (+ (* i u) (* (- 1 i) (- 1 u)))
+                            (+ (* j v) (* (- 1 j) (- 1 v)))
+                            (+ (* k w) (* (- 1 k) (- 1 w)))
+                            (get-in c [i j k]))))))
     @accum))
 
 (defn perlin-generate-perm []
@@ -45,9 +45,8 @@
     (doseq [di (range 2)]
       (doseq [dj (range 2)]
         (doseq [dk (range 2)]
-          (do
-            (let [index (bit-xor (get (:perm-x perlin-res) (bit-and (+ i di) 255))
-                                 (get (:perm-y perlin-res) (bit-and (+ j dj) 255))
-                                 (get (:perm-z perlin-res) (bit-and (+ k dk) 255)))]
-              (swap! c assoc-in [di dj dk] (get (:ranfloat perlin-res) index)))))))
+          (let [index (bit-xor (get (:perm-x perlin-res) (bit-and (+ i di) 255))
+                               (get (:perm-y perlin-res) (bit-and (+ j dj) 255))
+                               (get (:perm-z perlin-res) (bit-and (+ k dk) 255)))]
+            (swap! c assoc-in [di dj dk] (get (:ranfloat perlin-res) index))))))
     (trilinear-interpolation @c u v w)))
