@@ -22,4 +22,5 @@
 (defrecord NoiseTexture [scale]
   Texture
   (value [this u v point]
-    (vec/* [1.0 1.0 1.0] (perlin/turbulence point))))
+    (vec/* [1.0 1.0 1.0] (* 0.5 (+ 1.0 (math/sin (+ (* (vec/z point) scale)
+                                                    (* 10 (perlin/turbulence point)))))))))
