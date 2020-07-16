@@ -69,3 +69,14 @@
                                (get (:perm-z perlin-res) (bit-and (int (+ k dk)) 255)))]
             (swap! c assoc-in [di dj dk] (get (:ranvec perlin-res) index))))))
     (perlin-interpolation @c u v w)))
+
+(defn turbulence [point & {:keys [depth] :or {depth 7}}]
+  (let [accum (atom 0.0)
+        temp-point (atom point)
+        weight (atom 1.0)]
+    (doseq [i (range depth)]
+      (do
+        (swap! accum + (* @weight (noise @temp-point)))
+        (swap! weight * 0.5)
+        (swap! temp-point vec/* 2)))
+    (Math/abs @accum)))
