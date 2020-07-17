@@ -14,3 +14,9 @@
         v (/ (+ theta (/ Math/PI 2))
              Math/PI)]
     {:u u :v v}))
+
+(defn clamp [value mini maxi]
+  (cond
+    (< value mini) mini
+    (> value maxi) maxi
+    :else value))

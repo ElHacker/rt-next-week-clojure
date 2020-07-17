@@ -160,6 +160,36 @@
                 (pixel-line ir ig ib))
               "./images/perlin-marble-smooth-spheres")))
 
+(defn make-earth-world []
+  (let [earth-texture (texture/->ImageTexture "./images/earthmap.jpg")
+        earth-surface (material/->Lambertian earth-texture)
+        world (atom [(hittable/->Sphere [0 0 0] 2 earth-surface)])]
+    @world))
+
+(defn earth-scene []
+  (let [aspect-ratio (/ 16.0 9.0)
+        image-width 384
+        image-height (int (/ image-width aspect-ratio))
+        num-samples 30
+        max-depth 50
+        lookfrom [13 2 3]
+        lookat [0 0 0]
+        vup [0 1 0]
+        dist-to-focus 10.0
+        aperture 0.0
+        world (make-earth-world)
+        cam (camera/make lookfrom lookat vup 20 aspect-ratio aperture dist-to-focus 0.0 1.0)]
+    (raytrace image-width image-height
+              (for [j (range (dec image-height) -1 -1)
+                    i (range 0 image-width)
+                    :let [color (evolve-color world cam image-width image-height num-samples i j max-depth)
+                          corrected-color (map #(Math/sqrt %) color)
+                          ir (int (* 255.999 (vec/x corrected-color)))
+                          ig (int (* 255.999 (vec/y corrected-color)))
+                          ib (int (* 255.999 (vec/z corrected-color)))]]
+                (pixel-line ir ig ib))
+              "./images/earth-sphere")))
+
 
 (defn create-ppm []
   (let [image-width 256,
@@ -175,4 +205,4 @@
         ppm (str header body)]
     (img/save-ppm ppm "./images/image")))
 
-(time (two-perlin-spheres-scene))
+(time (earth-scene))
