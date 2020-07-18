@@ -9,12 +9,18 @@
   (bounding-box [this t0 t1])
   (center [this timestamp]))
 
- ; TODO(elhacker): Update all the callers to hit-record to provide a value for uv
-(defn hit-record [r t center radius material & {:keys [u v] :or {u 0 v 0}}]
-  (let [p (ray/point-at r t)
-        outward-normal (vec// (vec/- p center) radius)
-        front-face (< (vec/dot (:direction r) outward-normal) 0)]
-    {:t t :u u :v v :p p :normal (if front-face outward-normal (vec/- outward-normal)) :material material :front-face front-face}))
+; TODO(elhacker): Update all the callers to hit-record to provide a function for uv
+(defn hit-record
+  ([r t center radius material uvfn]
+   (let [p (ray/point-at r t)
+         outward-normal (vec// (vec/- p center) radius)
+         front-face (< (vec/dot (:direction r) outward-normal) 0)
+         uv (uvfn p)
+         {u :u
+          v :v} uv]
+     {:t t :u u :v v :p p :normal (if front-face outward-normal (vec/- outward-normal)) :material material :front-face front-face}))
+  ([r t center radius material]
+   (hit-record r t center radius material #({:u 0 :v 0}))))
 
 (defrecord Sphere [center radius material]
   Hittable
@@ -24,15 +30,15 @@
           half-b (vec/dot oc (ray/direction r))
           c (- (vec/length-squared oc) (* (:radius this) (:radius this)))
           discriminant (- (* half-b half-b) (* a c))
-          uv (util/get-sphere-uv (vec// (:center this) (:radius this)))]
+          uvfn #(util/get-sphere-uv (vec// (vec/- % (:center this)) (:radius this)))]
       (when (pos? discriminant)
         (let [root (Math/sqrt discriminant)
               temp (/ (- (- half-b) root) a)]
           (if (and (< temp t-max) (> temp t-min))
-            (hit-record r temp (:center this) (:radius this) (:material this) (:u uv) (:v uv))
+            (hit-record r temp (:center this) (:radius this) (:material this) uvfn)
             (let [temp (/ (+ (- half-b) root) a)]
               (when (and (< temp t-max) (> temp t-min))
-                (hit-record r temp (:center this) (:radius this) (:material this) (:u uv) (:v uv)))))))))
+                (hit-record r temp (:center this) (:radius this) (:material this) uvfn))))))))
 
   (bounding-box [this t0 t1]
     (let [output-box (aabb/make (vec/- (:center this) [(:radius this) (:radius this) (:radius this)])

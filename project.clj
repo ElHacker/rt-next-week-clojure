@@ -9,4 +9,4 @@
   :main ^:skip-aot rt-in-weekend.core
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}}
-  :repl-options {:timeout 480000})
+  :repl-options {:timeout 960000})
