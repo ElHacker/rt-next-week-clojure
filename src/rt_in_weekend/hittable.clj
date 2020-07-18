@@ -82,6 +82,30 @@
           output-box (aabb/surrounding-box box0 box1)]
       {:has-bbox true :output-box output-box})))
 
+; Axis aligned rectangle
+(defrecord XYRect [x0 x1 y0 y1 k material]
+  Hittable
+  (center [this timestamp] nil)
+
+  (hit [this r t-min t-max]
+    (let [t (/ (- k (vec/z (:origin r)))
+               (vec/z (:direction r)))
+          x (+ (vec/x (:origin r)) (* t (vec/x (:direction r))))
+          y (+ (vec/y (:origin r)) (* t (vec/y (:direction r))))
+          u (/ (- x x0) (- x1 x0))
+          v (/ (- y y0) (- y1 y0))
+          outward-normal [0 0 1]
+          front-face (< (vec/dot (:direction r) outward-normal) 0)
+          p (ray/point-at r t)]
+      (when (and (>= t t-min) (<= t t-max) (>= x x0) (<= x x1) (>= y y0) (<= y y1))
+        {:t t :u u :v v :p p :normal (if front-face outward-normal (vec/- outward-normal)) :material material :front-face front-face})))
+
+  ; The bounding box must have non-zero width in each dimension, so pad the Z
+  ; dimension a small amount
+  (bounding-box [this t0 t1]
+    (let [output-box (aabb/surrounding-box [x0 y0 (- k 0.0001)] [x1 y1 (+ k 0.0001)])]
+      {:has-bbox true :output-box output-box})))
+
 (defrecord bvh-node [hittable-objects start end time0 time1 left right box]
   Hittable
   (center [this timestamp] nil)
