@@ -40,12 +40,7 @@
           u (util/clamp u 0.0 1.0)
           ; Flip v to image coordinates.
           v (- 1.0 (util/clamp v 0.0 1.0))
-          i (int (* u width))
-          j (int (* v height))
-          ; Clamp integer mapping, since actual coordinates should be less than 1.0
-          i (if (>= i width) (- width 1) i)
-          j (if (>= j height) (- height 1) j)
-          ; TODO (elhacker): the i and j coordinates are wrong, the image/get-pixel expects pixel
-          ; coordinates within width and height, but the computation here is normalizing them to 1.0
-          pixel (colours/values-rgb (image/get-pixel image-data j i))]
+          i (int (* u (- width 1)))
+          j (int (* v (- height 1)))
+          pixel (colours/values-rgb (image/get-pixel image-data i j))]
       pixel)))
