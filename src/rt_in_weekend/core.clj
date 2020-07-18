@@ -182,11 +182,12 @@
         dist-to-focus 10.0
         aperture 0.0
         world (make-earth-world)
-        cam (camera/make lookfrom lookat vup 20 aspect-ratio aperture dist-to-focus 0.0 1.0)]
+        cam (camera/make lookfrom lookat vup 20 aspect-ratio aperture dist-to-focus 0.0 1.0)
+        background [0 0 0]]
     (raytrace image-width image-height
               (for [j (range (dec image-height) -1 -1)
                     i (range 0 image-width)
-                    :let [color (evolve-color world cam image-width image-height num-samples i j max-depth)
+                    :let [color (evolve-color world cam background image-width image-height num-samples i j max-depth)
                           corrected-color (map #(Math/sqrt %) color)
                           ir (int (* 255.999 (vec/x corrected-color)))
                           ig (int (* 255.999 (vec/y corrected-color)))
