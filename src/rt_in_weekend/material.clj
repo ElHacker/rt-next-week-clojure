@@ -41,7 +41,8 @@
           (Math/pow (- 1 cosine) 5)))))
 
 (defprotocol Material
-  (scatter [this r-in rec]))
+  (scatter [this r-in rec])
+  (emitted [this u v point]))
 
 (defrecord Lambertian [albedo]
   Material
@@ -49,7 +50,9 @@
     (let [target (vec/+ (vec/+ (:p rec) (:normal rec)) (random-unit-vector))
           scattered (ray/make (:p rec) (vec/- target (:p rec)) (:timestamp r-in))
           attenuation (texture/value (:albedo this) (:u rec) (:v rec) (:p rec))]
-      {:ok true :attenuation attenuation :scattered scattered})))
+      {:ok true :attenuation attenuation :scattered scattered}))
+
+  (emitted [this u v point] [0 0 0]))
 
 (defrecord Metal [albedo f]
   Material
@@ -58,7 +61,9 @@
           reflected (vec/reflect (vec/unit-vector (:direction r-in)) (:normal rec))
           scattered (ray/make (:p rec) (vec/+ reflected (vec/* (random-in-unit-sphere) fuzz)) (:timestamp r-in))
           final (vec/dot (:direction scattered) (:normal rec))]
-      {:ok (pos? final) :attenuation (:albedo this) :scattered scattered})))
+      {:ok (pos? final) :attenuation (:albedo this) :scattered scattered}))
+
+  (emitted [this u v point] [0 0 0]))
 
 (defrecord Dialectric [ref-idx]
   Material
@@ -79,4 +84,14 @@
                                                         (:p rec)
                                                         (vec/reflect unit-direction (:normal rec))
                                                         (:timestamp r-in))}
-        {:ok true :attenuation attenuation :scattered scattered}))))
+        {:ok true :attenuation attenuation :scattered scattered})))
+
+  (emitted [this u v point] [0 0 0]))
+
+(defrecord DiffuseLight [emitTexture]
+  Material
+  (scatter [this r-in rec]
+    {:ok false :attenuation nil :scattered nil})
+
+  (emitted [this u v point]
+    (texture/value emitTexture u v point)))

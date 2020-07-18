@@ -20,24 +20,25 @@
         ppm (str header body)]
     (img/save-ppm ppm path)))
 
-(defn ray-color [r world depth]
+(defn ray-color [r background world depth]
   (if-let [rec (hittable/hittable-list world r 0.0001 Float/MAX_VALUE)]
-    (let [result (material/scatter (:material rec) r rec)]
+    (let [result (material/scatter (:material rec) r rec)
+          emitted (material/emitted (:material rec) (:u rec) (:v rec) (:p rec))]
       (if (and (> depth 0) (:ok result))
-        (vec/* (:attenuation result) (ray-color (:scattered result) world (dec depth)))
-        [0 0 0]))
-    (let [unit-direction (vec/unit-vector (ray/direction r))
-          t (* 0.5 (inc (vec/y unit-direction)))]
-      (vec/+ (vec/* [1.0 1.0 1.0] (- 1.0 t))
-             (vec/* [0.5 0.7 1.0] t)))))
+        (vec/* (vec/+ emitted (:attenuation result))
+               (ray-color (:scattered result) background world (dec depth)))
+        (if (> depth 0)
+          [0 0 0]
+          emitted)))
+    background))
 
-(defn evolve-color [world cam image-width image-height num-samples i j depth]
+(defn evolve-color [world cam background image-width image-height num-samples i j depth]
   (let [color (atom [0 0 0])]
     (doseq [_ (range num-samples)]
       (let [u (/ (+ i (rand)) (float image-width))
             v (/ (+ j (rand)) (float image-height))
             r (camera/get-ray cam u v)]
-        (swap! color vec/+ (ray-color r world depth))))
+        (swap! color vec/+ (ray-color r background world depth))))
     (vec// @color (float num-samples))))
 
 (defn make-world []
@@ -85,11 +86,12 @@
         dist-to-focus 10.0
         aperture 0.0
         world (make-world)
-        cam (camera/make lookfrom lookat vup 20 aspect-ratio aperture dist-to-focus 0.0 1.0)]
+        cam (camera/make lookfrom lookat vup 20 aspect-ratio aperture dist-to-focus 0.0 1.0)
+        background [0 0 0]]
     (raytrace image-width image-height
               (for [j (range (dec image-height) -1 -1)
                     i (range 0 image-width)
-                    :let [color (evolve-color world cam image-width image-height num-samples i j max-depth)
+                    :let [color (evolve-color world cam background image-width image-height num-samples i j max-depth)
                           corrected-color (map #(Math/sqrt %) color)
                           ir (int (* 255.999 (vec/x corrected-color)))
                           ig (int (* 255.999 (vec/y corrected-color)))
@@ -118,11 +120,12 @@
         dist-to-focus 10.0
         aperture 0.0
         world (make-checkered-world)
-        cam (camera/make lookfrom lookat vup 20 aspect-ratio aperture dist-to-focus 0.0 1.0)]
+        cam (camera/make lookfrom lookat vup 20 aspect-ratio aperture dist-to-focus 0.0 1.0)
+        background [0 0 0]]
     (raytrace image-width image-height
               (for [j (range (dec image-height) -1 -1)
                     i (range 0 image-width)
-                    :let [color (evolve-color world cam image-width image-height num-samples i j max-depth)
+                    :let [color (evolve-color world cam background image-width image-height num-samples i j max-depth)
                           corrected-color (map #(Math/sqrt %) color)
                           ir (int (* 255.999 (vec/x corrected-color)))
                           ig (int (* 255.999 (vec/y corrected-color)))
@@ -148,11 +151,12 @@
         dist-to-focus 10.0
         aperture 0.0
         world (make-perlin-world)
-        cam (camera/make lookfrom lookat vup 20 aspect-ratio aperture dist-to-focus 0.0 1.0)]
+        cam (camera/make lookfrom lookat vup 20 aspect-ratio aperture dist-to-focus 0.0 1.0)
+        background [0 0 0]]
     (raytrace image-width image-height
               (for [j (range (dec image-height) -1 -1)
                     i (range 0 image-width)
-                    :let [color (evolve-color world cam image-width image-height num-samples i j max-depth)
+                    :let [color (evolve-color world cam background image-width image-height num-samples i j max-depth)
                           corrected-color (map #(Math/sqrt %) color)
                           ir (int (* 255.999 (vec/x corrected-color)))
                           ig (int (* 255.999 (vec/y corrected-color)))
