@@ -230,6 +230,44 @@
                 (pixel-line ir ig ib))
               "./images/rectangle-sphere-light-source")))
 
+(defn make-cornell-world []
+  (let [red (material/->Lambertian (texture/->SolidColor [0.65 0.05 0.05]))
+        white (material/->Lambertian (texture/->SolidColor [0.73 0.73 0.73]))
+        green (material/->Lambertian (texture/->SolidColor [0.12 0.45 0.15]))
+        light (material/->DiffuseLight (texture/->SolidColor [15 15 15]))
+        world (atom [(hittable/->YZRect 0 555 0 555 555 green)
+                     (hittable/->YZRect 0 555 0 555 0 red)
+                     (hittable/->XZRect 213 343 227 332 554 light)
+                     (hittable/->XZRect 0 555 0 555 0 white)
+                     (hittable/->XZRect 0 555 0 555 555 white)
+                     (hittable/->XYRect 0 555 0 555 555 white)])]
+    @world))
+
+(defn cornell-box-scene []
+  (let [aspect-ratio (/ 16.0 9.0)
+        image-width 600
+        image-height (int (/ image-width aspect-ratio))
+        num-samples 100
+        max-depth 30
+        lookfrom [278 278 -800]
+        lookat [278 278 0]
+        vup [0 1 0]
+        dist-to-focus 10.0
+        aperture 0.0
+        world (make-cornell-world)
+        cam (camera/make lookfrom lookat vup 40 aspect-ratio aperture dist-to-focus 0.0 1.0)
+        background [0 0 0]]
+    (raytrace image-width image-height
+              (for [j (range (dec image-height) -1 -1)
+                    i (range 0 image-width)
+                    :let [color (evolve-color world cam background image-width image-height num-samples i j max-depth)
+                          corrected-color (map #(Math/sqrt %) color)
+                          ir (int (* 255.999 (vec/x corrected-color)))
+                          ig (int (* 255.999 (vec/y corrected-color)))
+                          ib (int (* 255.999 (vec/z corrected-color)))]]
+                (pixel-line ir ig ib))
+              "./images/cornell-box")))
+
 (defn create-ppm []
   (let [image-width 256,
         image-height 256,
@@ -244,4 +282,4 @@
         ppm (str header body)]
     (img/save-ppm ppm "./images/image")))
 
-(time (light-scene))
+(time (cornell-box-scene))
