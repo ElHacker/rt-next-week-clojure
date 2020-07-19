@@ -76,7 +76,7 @@
 
 (defn final-scene []
   (let [aspect-ratio (/ 16.0 9.0)
-        image-width 600
+        image-width 400
         image-height (int (/ image-width aspect-ratio))
         num-samples 30
         max-depth 50
@@ -110,7 +110,7 @@
 
 (defn two-spheres-scene []
   (let [aspect-ratio (/ 16.0 9.0)
-        image-width 600
+        image-width 400
         image-height (int (/ image-width aspect-ratio))
         num-samples 30
         max-depth 50
@@ -137,14 +137,12 @@
   (let [perlin-texture (texture/->NoiseTexture 10)
         difflight (material/->DiffuseLight (texture/->SolidColor [4 4 4]))
         world (atom [(hittable/->Sphere [0 -1000 0] 1000 (material/->Lambertian perlin-texture))
-                     (hittable/->Sphere [0 2 0] 2 (material/->Lambertian perlin-texture))
-                     (hittable/->Sphere [0 7 0] 2 difflight)
-                     (hittable/->XYRect 3 5 1 3 -2 difflight)])]
+                     (hittable/->Sphere [0 2 0] 2 (material/->Lambertian perlin-texture))])]
     @world))
 
 (defn two-perlin-spheres-scene []
   (let [aspect-ratio (/ 16.0 9.0)
-        image-width 600
+        image-width 400
         image-height (int (/ image-width aspect-ratio))
         num-samples 30
         max-depth 50
@@ -165,7 +163,7 @@
                           ig (int (* 255.999 (vec/y corrected-color)))
                           ib (int (* 255.999 (vec/z corrected-color)))]]
                 (pixel-line ir ig ib))
-              "./images/perlin-marble-spheres-light")))
+              "./images/perlin-marble-smooth-spheres")))
 
 (defn make-earth-world []
   (let [earth-texture (texture/->ImageTexture "./images/earthmap.jpg")
@@ -175,7 +173,7 @@
 
 (defn earth-scene []
   (let [aspect-ratio (/ 16.0 9.0)
-        image-width 600
+        image-width 400
         image-height (int (/ image-width aspect-ratio))
         num-samples 30
         max-depth 50
@@ -198,6 +196,39 @@
                 (pixel-line ir ig ib))
               "./images/earth-sphere")))
 
+(defn make-light-world []
+  (let [perlin-texture (texture/->NoiseTexture 10)
+        difflight (material/->DiffuseLight (texture/->SolidColor [4 4 4]))
+        world (atom [(hittable/->Sphere [0 -1000 0] 1000 (material/->Lambertian perlin-texture))
+                     (hittable/->Sphere [0 2 0] 2 (material/->Lambertian perlin-texture))
+                     (hittable/->Sphere [0 7 0] 2 difflight)
+                     (hittable/->XYRect 3 5 1 3 -2 difflight)])]
+    @world))
+
+(defn light-scene []
+  (let [aspect-ratio (/ 16.0 9.0)
+        image-width 400
+        image-height (int (/ image-width aspect-ratio))
+        num-samples 100
+        max-depth 50
+        lookfrom [26 3 6]
+        lookat [0 2 0]
+        vup [0 1 0]
+        dist-to-focus 10.0
+        aperture 0.0
+        world (make-light-world)
+        cam (camera/make lookfrom lookat vup 20 aspect-ratio aperture dist-to-focus 0.0 1.0)
+        background [0 0 0]]
+    (raytrace image-width image-height
+              (for [j (range (dec image-height) -1 -1)
+                    i (range 0 image-width)
+                    :let [color (evolve-color world cam background image-width image-height num-samples i j max-depth)
+                          corrected-color (map #(Math/sqrt %) color)
+                          ir (int (* 255.999 (vec/x corrected-color)))
+                          ig (int (* 255.999 (vec/y corrected-color)))
+                          ib (int (* 255.999 (vec/z corrected-color)))]]
+                (pixel-line ir ig ib))
+              "./images/rectangle-sphere-light-source")))
 
 (defn create-ppm []
   (let [image-width 256,
@@ -213,4 +244,4 @@
         ppm (str header body)]
     (img/save-ppm ppm "./images/image")))
 
-(time (two-perlin-spheres-scene))
+(time (light-scene))
