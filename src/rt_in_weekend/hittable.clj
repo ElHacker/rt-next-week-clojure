@@ -245,3 +245,27 @@
               (reset! first-box false)))))
       {:has-bbox true :output-box @output-box})))
 
+(defn create-box-sides [p0 p1 material]
+  (let [sides (atom [(->XYRect (vec/x p0) (vec/x p1) (vec/y p0) (vec/y p1) (vec/z p1) material)
+                     (->XYRect (vec/x p0) (vec/x p1) (vec/y p0) (vec/y p1) (vec/z p0) material)
+
+                     (->XZRect (vec/x p0) (vec/x p1) (vec/z p0) (vec/z p1) (vec/y p1) material)
+                     (->XZRect (vec/x p0) (vec/x p1) (vec/z p0) (vec/z p1) (vec/y p0) material)
+
+                     (->YZRect (vec/y p0) (vec/y p1) (vec/z p0) (vec/z p1) (vec/x p1) material)
+                     (->YZRect (vec/y p0) (vec/y p1) (vec/z p0) (vec/z p1) (vec/x p0) material)])]
+    @sides))
+
+(def create-box-sides-memoize (memoize create-box-sides))
+
+(defrecord Box [p0 p1 material]
+  Hittable
+  (center [this timestamp] nil)
+
+  (hit [this r t-min t-max]
+    (let [box-sides (create-box-sides p0 p1 material)]
+      (hittable-list box-sides r t-min t-max)))
+
+  (bounding-box [this t0 t1]
+    (let [output-box (aabb/surrounding-box [p0 p1])]
+      {:has-bbox true :output-box output-box})))

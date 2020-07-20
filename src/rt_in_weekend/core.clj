@@ -240,15 +240,17 @@
                      (hittable/->XZRect 213 343 227 332 554 light)
                      (hittable/->XZRect 0 555 0 555 0 white)
                      (hittable/->XZRect 0 555 0 555 555 white)
-                     (hittable/->XYRect 0 555 0 555 555 white)])]
+                     (hittable/->XYRect 0 555 0 555 555 white)
+                     (hittable/->Box [130 0 65] [295 165 230] white)
+                     (hittable/->Box [265 0 295] [430 330 460] white)])]
     @world))
 
 (defn cornell-box-scene []
   (let [aspect-ratio (/ 16.0 9.0)
         image-width 600
         image-height (int (/ image-width aspect-ratio))
-        num-samples 100
-        max-depth 30
+        num-samples 30
+        max-depth 20
         lookfrom [278 278 -800]
         lookat [278 278 0]
         vup [0 1 0]
@@ -266,7 +268,7 @@
                           ig (int (* 255.999 (vec/y corrected-color)))
                           ib (int (* 255.999 (vec/z corrected-color)))]]
                 (pixel-line ir ig ib))
-              "./images/cornell-box")))
+              "./images/cornell-box-with-two-blocks")))
 
 (defn create-ppm []
   (let [image-width 256,
