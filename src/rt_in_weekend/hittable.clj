@@ -269,3 +269,24 @@
   (bounding-box [this t0 t1]
     (let [output-box (aabb/surrounding-box [p0 p1])]
       {:has-bbox true :output-box output-box})))
+
+(defrecord Translate [hittable displacement]
+  Hittable
+  (center [this timestamp] nil)
+
+  (hit [this r t-min t-max]
+    (let [moved-r ((ray/make (vec/- (:origin r) displacement) (:direction r) (:timestamp r)))]
+      (if-let [rec (hit hittable moved-r t-min t-max)]
+        (let [p (vec/+ (:p rec) displacement)
+              {t :t
+               u :u
+               v :v
+               normal :normal
+               material :material
+               front-face :front-face} rec]
+          {:t t :u u :v v :p p :normal normal :material material :front-face front-face}))))
+
+  (bounding-box [this t0 t1]
+    (if-let [hittable-output-box (bounding-box hittable t0 t1)]
+      (let [output-box (aabb/make (vec/+ (aabb/mini hittable-output-box) displacement)
+                                  (vec/+ (aabb/maxi hittable-output-box) displacement))]))))
