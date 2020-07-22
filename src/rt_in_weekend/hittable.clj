@@ -2,7 +2,8 @@
   (:require [rt-in-weekend.vec :as vec]
             [rt-in-weekend.ray :as ray]
             [rt-in-weekend.aabb :as aabb]
-            [rt-in-weekend.util :as util]))
+            [rt-in-weekend.util :as util]
+            [clojure.algo.generic.math-functions :as math]))
 
 (defprotocol Hittable
   (hit [this r t-min t-max])
@@ -275,7 +276,7 @@
   (center [this timestamp] nil)
 
   (hit [this r t-min t-max]
-    (let [moved-r ((ray/make (vec/- (:origin r) displacement) (:direction r) (:timestamp r)))]
+    (let [moved-r (ray/make (vec/- (ray/origin r) displacement) (ray/direction r) (ray/timestamp r))]
       (if-let [rec (hit hittable moved-r t-min t-max)]
         (let [p (vec/+ (:p rec) displacement)
               {t :t
@@ -290,3 +291,65 @@
     (if-let [hittable-output-box (bounding-box hittable t0 t1)]
       (let [output-box (aabb/make (vec/+ (aabb/mini hittable-output-box) displacement)
                                   (vec/+ (aabb/maxi hittable-output-box) displacement))]))))
+
+(defrecord RotateY [hittable angle]
+  Hittable
+  (center [this timestamp] nil)
+
+  (hit [this r t-min t-max]
+    (let [radians (Math/toRadians angle)
+          sin-theta (math/sin radians)
+          cos-theta (math/cos radians)
+          origin-x (- (* cos-theta (vec/x (ray/origin r)))
+                      (* sin-theta (vec/z (ray/origin r))))
+          origin-z (+ (* sin-theta (vec/x (ray/origin r)))
+                      (* cos-theta (vec/z (ray/origin r))))
+          direction-x (- (* cos-theta (vec/x (ray/direction r)))
+                         (* sin-theta (vec/z (ray/direction r))))
+          direction-z (+ (* sin-theta (vec/x (ray/direction r)))
+                         (* cos-theta (vec/z (ray/direction r))))
+          origin [origin-x (vec/y (ray/origin r)) origin-z]
+          direction [direction-x (vec/y (ray/direction r)) direction-z]
+          rotated-r (ray/make origin direction (ray/timestamp r))]
+      (if-let [rec (hit hittable rotated-r t-min t-max)]
+        (let [p-x (+ (* cos-theta (vec/x (:p rec)))
+                     (* sin-theta (vec/z (:p rec))))
+              p-z (+ (- (* sin-theta (vec/x (:p rec))))
+                     (* cos-theta (vec/z (:p rec))))
+              normal-x (+ (* cos-theta (vec/x (:normal rec)))
+                          (* sin-theta (vec/z (:normal rec))))
+              normal-z (+ (- (* sin-theta (vec/x (:normal rec))))
+                          (* cos-theta (vec/z (:normal rec))))
+              p [p-x (vec/y (:p rec)) p-z]
+              normal [normal-x (vec/y (:normal rec)) normal-z]
+              {t :t
+               u :u
+               v :v
+               material :material
+               front-face :front-face} rec]
+          {:t t :u u :v v :p p :normal normal :material material :front-face front-face}))))
+
+  (bounding-box [this t0 t1]
+    (let [radians (Math/toRadians angle)
+          sin-theta (math/sin radians)
+          cos-theta (math/cos radians)
+          bbox-min (atom [##Inf ##Inf ##Inf])
+          bbox-max (atom [##-Inf ##-Inf ##-Inf])
+          {has-bbox :has-bbox
+           bbox :bbox} (bounding-box hittable 0 1)]
+      (doseq [i (range 2)]
+        (doseq [j (range 2)]
+          (doseq [k (range 2)]
+            (let [compute-coordinate #(+ (* %1 (%2 (aabb/maxi bbox)))
+                                         (* (- 1 %1 (%2 (aabb/mini bbox)))))
+                  x (compute-coordinate i vec/x)
+                  y (compute-coordinate j vec/y)
+                  z (compute-coordinate k vec/z)
+                  new-x (+ (* cos-theta x) (* sin-theta z))
+                  new-z (+ (- (* sin-theta x)) (* cos-theta z))
+                  tester [new-x y new-z]]
+              (doseq [c (range 3)]
+                (do
+                  (swap! bbox-min assoc c (min (get bbox-min c) (get tester c)))
+                  (swap! bbox-max assoc c (max (get bbox-max c) (get tester c)))))))))
+      {:has-bbox has-bbox :output-box (aabb/make @bbox-min @bbox-max)})))
