@@ -234,17 +234,23 @@
   (let [red (material/->Lambertian (texture/->SolidColor [0.65 0.05 0.05]))
         white (material/->Lambertian (texture/->SolidColor [0.73 0.73 0.73]))
         green (material/->Lambertian (texture/->SolidColor [0.12 0.45 0.15]))
-        light (material/->DiffuseLight (texture/->SolidColor [15 15 15]))
+        light (material/->DiffuseLight (texture/->SolidColor [7 7 7]))
         box1 (hittable/->Box [0 0 0] [165 330 165] white)
         box2 (hittable/->Box [0 0 0] [165 165 165] white)
         world (atom [(hittable/->YZRect 0 555 0 555 555 green)
                      (hittable/->YZRect 0 555 0 555 0 red)
-                     (hittable/->XZRect 213 343 227 332 554 light)
+                     (hittable/->XZRect 113 443 127 432 554 light)
                      (hittable/->XZRect 0 555 0 555 0 white)
                      (hittable/->XZRect 0 555 0 555 555 white)
                      (hittable/->XYRect 0 555 0 555 555 white)
-                     (hittable/->Translate (hittable/->RotateY box1 15) [265 0 295])
-                     (hittable/->Translate (hittable/->RotateY box2 -18) [130 0 65])])]
+                     (hittable/->ConstantMedium
+                       (hittable/->Translate (hittable/->RotateY box1 15) [265 0 295])
+                       0.01
+                       (texture/->SolidColor [0 0 0]))
+                     (hittable/->ConstantMedium
+                       (hittable/->Translate (hittable/->RotateY box2 -18) [130 0 65])
+                       0.01
+                       (texture/->SolidColor [1 1 1]))])]
     @world))
 
 (defn cornell-box-scene []
@@ -270,7 +276,7 @@
                           ig (int (* 255.999 (vec/y corrected-color)))
                           ib (int (* 255.999 (vec/z corrected-color)))]]
                 (pixel-line ir ig ib))
-              "./images/cornell-box-with-rotated-and-translated-blocks")))
+              "./images/cornell-smoke")))
 
 (defn create-ppm []
   (let [image-width 256,

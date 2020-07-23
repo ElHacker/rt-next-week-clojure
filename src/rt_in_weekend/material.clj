@@ -95,3 +95,12 @@
 
   (emitted [this u v point]
     (texture/value emitTexture u v point)))
+
+(defrecord Isotropic [texture]
+  Material
+  (scatter [this r-in rec]
+    (let [scattered (ray/make (:p rec) (random-in-unit-sphere) (:timestamp r-in))
+          attenuation (texture/value (:texture this) (:u rec) (:v rec) (:p rec))]
+      {:of true :attenuation attenuation :scattered scattered}))
+
+  (emitted [this u v point] [0 0 0]))

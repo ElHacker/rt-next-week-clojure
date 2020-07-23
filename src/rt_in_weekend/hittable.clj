@@ -3,6 +3,7 @@
             [rt-in-weekend.ray :as ray]
             [rt-in-weekend.aabb :as aabb]
             [rt-in-weekend.util :as util]
+            [rt-in-weekend.material :as materials]
             [clojure.algo.generic.math-functions :as math]))
 
 (defprotocol Hittable
@@ -353,3 +354,36 @@
                   (swap! bbox-min assoc c (min (get bbox-min c) (get tester c)))
                   (swap! bbox-max assoc c (max (get bbox-max c) (get tester c)))))))))
       {:has-bbox has-bbox :output-box (aabb/make @bbox-min @bbox-max)})))
+
+(defrecord ConstantMedium [hittable density texture]
+  Hittable
+  (center [this timestmap] nil)
+
+  (hit [this r t-min t-max]
+    (if-let [rec1 (hit hittable r ##-Inf ##Inf)]
+      (if-let [rec2 (hit hittable r (+ (:t rec1) 0.0001) ##Inf)]
+        (let [rec1 (if (< (:t rec1) t-min)
+                     (assoc rec1 :t t-min)
+                     rec1)
+              rec2 (if (> (:t rec2) t-max)
+                     (assoc rec2 :t t-max)
+                     rec2)]
+          (if (< (:t rec1) (:t rec2))
+            (let [rec1 (if (< (:t rec1) 0)
+                        (assoc rec1 :t 0)
+                        rec1)
+                  ray-length (vec/length (ray/direction r))
+                  distance-inside-boundary (* (- (:t rec2) (:t rec1)) ray-length)
+                  neg-inv-density (/ -1 density)
+                  hit-distance (* neg-inv-density (math/log (rand)))]
+              (if (<= hit-distance distance-inside-boundary)
+                (let [t (+ (:t rec1) (/ hit-distance ray-length))
+                      p (ray/point-at r t)
+                      normal [1 0 0] ; Arbitrary value
+                      front-face true ; Also arbitrary
+                      material (materials/->Isotropic texture)]
+                  ; NOTE: I'm not sure if defaulting u and v to 0 is correct here.
+                  {:t t :u 0 :v 0 :p p :normal normal :material material :front-face front-face}))))))))
+
+  (bounding-box [this t0 t1]
+    (bounding-box hittable t0 t1)))
