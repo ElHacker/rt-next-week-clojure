@@ -237,20 +237,22 @@
         light (material/->DiffuseLight (texture/->SolidColor [7 7 7]))
         box1 (hittable/->Box [0 0 0] [165 330 165] white)
         box2 (hittable/->Box [0 0 0] [165 165 165] white)
+        cmbox1 (hittable/->ConstantMedium
+                 (hittable/->Translate (hittable/->RotateY box1 15) [265 0 295])
+                 0.01
+                 (texture/->SolidColor [0 0 0]))
+        cmbox2 (hittable/->ConstantMedium
+                 (hittable/->Translate (hittable/->RotateY box2 -18) [130 0 65])
+                 0.01
+                 (texture/->SolidColor [1 1 1]))
+        boxes [cmbox1 cmbox2]
         world (atom [(hittable/->YZRect 0 555 0 555 555 green)
                      (hittable/->YZRect 0 555 0 555 0 red)
                      (hittable/->XZRect 113 443 127 432 554 light)
                      (hittable/->XZRect 0 555 0 555 0 white)
                      (hittable/->XZRect 0 555 0 555 555 white)
                      (hittable/->XYRect 0 555 0 555 555 white)
-                     (hittable/->ConstantMedium
-                       (hittable/->Translate (hittable/->RotateY box1 15) [265 0 295])
-                       0.01
-                       (texture/->SolidColor [0 0 0]))
-                     (hittable/->ConstantMedium
-                       (hittable/->Translate (hittable/->RotateY box2 -18) [130 0 65])
-                       0.01
-                       (texture/->SolidColor [1 1 1]))])]
+                     (hittable/bvh-node-split-build boxes 0 2 0 0)])]
     @world))
 
 (defn cornell-box-scene []
@@ -276,7 +278,7 @@
                           ig (int (* 255.999 (vec/y corrected-color)))
                           ib (int (* 255.999 (vec/z corrected-color)))]]
                 (pixel-line ir ig ib))
-              "./images/cornell-smoke")))
+              "./images/cornell-smoke-bvh")))
 
 (defn create-ppm []
   (let [image-width 256,

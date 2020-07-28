@@ -45,7 +45,7 @@
   (bounding-box [this t0 t1]
     (let [output-box (aabb/make (vec/- (:center this) [(:radius this) (:radius this) (:radius this)])
                                 (vec/+ (:center this) [(:radius this) (:radius this) (:radius this)]))]
-      {:has-bbox true :output-box output-box}))
+      output-box))
 
   (center [this timestamp]
     (:center this)))
@@ -82,7 +82,7 @@
           box1 (aabb/make (vec/- (center this t1) [(:radius this) (:radius this) (:radius this)])
                           (vec/+ (center this t1) [(:radius this) (:radius this) (:radius this)]))
           output-box (aabb/surrounding-box box0 box1)]
-      {:has-bbox true :output-box output-box})))
+      output-box)))
 
 ; XY Axis aligned rectangle
 (defrecord XYRect [x0 x1 y0 y1 k material]
@@ -106,7 +106,7 @@
   ; dimension a small amount
   (bounding-box [this t0 t1]
     (let [output-box (aabb/surrounding-box [x0 y0 (- k 0.0001)] [x1 y1 (+ k 0.0001)])]
-      {:has-bbox true :output-box output-box})))
+      output-box)))
 
 ; XZ Axis aligned rectangle
 (defrecord XZRect [x0 x1 z0 z1 k material]
@@ -130,7 +130,7 @@
   ; dimension a small amount
   (bounding-box [this t0 t1]
     (let [output-box (aabb/surrounding-box [x0 (- k 0.0001) z0] [x1 (+ k 0.0001) z1])]
-      {:has-bbox true :output-box output-box})))
+      output-box)))
 
 ; YZ Axis aligned rectangle
 (defrecord YZRect [y0 y1 z0 z1 k material]
@@ -154,22 +154,19 @@
   ; dimension a small amount
   (bounding-box [this t0 t1]
     (let [output-box (aabb/surrounding-box [(- k 0.0001) y0 z0] [(+ k 0.0001) y1 z1])]
-      {:has-bbox true :output-box output-box})))
+      output-box)))
 
-(defrecord bvh-node [hittable-objects start end time0 time1 left right box]
+(defrecord bvh-node [hittable-objects start end time0 time1 left right surrounding-box]
   Hittable
   (center [this timestamp] nil)
 
   (hit [this r t-min t-max]
-    (if (not (aabb/hit-pixar box r t-min t-min))
-      false
-      (let [rec (hit this r t-min t-max) ; TODO(elhacker): I don't think I should compute hit on this.
-            hit-left (hit left r t-min t-max)
-            hit-right (hit right r t-min (if hit-left (:t rec) t-max))]
+    (if (aabb/hit-pixar surrounding-box r t-min t-min)
+      (let [hit-left (hit left r t-min t-max)
+            hit-right (hit right r t-min (if hit-left (:t hit-left) t-max))]
         (or hit-left hit-right))))
 
-  (bounding-box [this t0 t1]
-    {:has-bbox true :output-box box}))
+  (bounding-box [this t0 t1] surrounding-box))
 
 (defn hittable-list [world r t-min t-max]
   (let [closest-so-far (atom t-max)
@@ -185,10 +182,10 @@
 (defn box-compare [hittable-a hittable-b axis]
   (let [box-a (bounding-box hittable-a 0 0)
         box-b (bounding-box hittable-b 0 0)]
-    (if (or (not (:has-bbox box-a))
-            (not (:has-bbox box-b)))
+    (if (or (not  box-a)
+            (not  box-b))
       (throw (Exception. "No bounding box in bvh-node constructor"))
-      (compare (get (aabb/mini (:output-box box-a)) axis) (get (aabb/mini (:output-box box-b)) axis)))))
+      (compare (get (aabb/mini box-a) axis) (get (aabb/mini box-b) axis)))))
 
 (defn box-x-compare [hittable-a hittable-b]
   (box-compare hittable-a hittable-b 0))
@@ -227,25 +224,25 @@
                         (reset! right (bvh-node-split-build sorted mid end time0 time1))))))
       (let [box-left (bounding-box @left time0 time1)
             box-right (bounding-box @right time0 time1)]
-        (if (or (not (:has-bbox box-left))
-                (not (:has-bbox box-right)))
+        (if (or (not box-left)
+                (not box-right))
           (throw (Exception. "No bounding box in bvh-node constructor"))
           ; Return an instance of bvh-node
-          (->bvh-node hittable-objects start end time0 time1 left right (aabb/surrounding-box box-left box-right)))))))
+          (->bvh-node hittable-objects start end time0 time1 @left @right (aabb/surrounding-box box-left box-right)))))))
 
 (defn hittable-list-bounding-box [world t0 t1 out-box]
   (if (empty? world)
-    false
+    nil
     (let [output-box (atom out-box)
           first-box (atom true)]
       (doseq [i (range 0 (count world))]
         (let [temp-box (bounding-box (get world i) t0 t1)]
-          (if (not (:has-bbox temp-box))
+          (if (not temp-box)
             false
             (do
               (reset! output-box (if first-box temp-box (aabb/surrounding-box output-box temp-box)))
               (reset! first-box false)))))
-      {:has-bbox true :output-box @output-box})))
+      @output-box)))
 
 (defn create-box-sides [p0 p1 material]
   (let [sides (atom [(->XYRect (vec/x p0) (vec/x p1) (vec/y p0) (vec/y p1) (vec/z p1) material)
@@ -269,8 +266,8 @@
       (hittable-list box-sides r t-min t-max)))
 
   (bounding-box [this t0 t1]
-    (let [output-box (aabb/surrounding-box [p0 p1])]
-      {:has-bbox true :output-box output-box})))
+    (let [output-box (aabb/make p0 p1)]
+      output-box)))
 
 (defrecord Translate [hittable displacement]
   Hittable
@@ -290,8 +287,8 @@
 
   (bounding-box [this t0 t1]
     (if-let [hittable-output-box (bounding-box hittable t0 t1)]
-      (let [output-box (aabb/make (vec/+ (aabb/mini hittable-output-box) displacement)
-                                  (vec/+ (aabb/maxi hittable-output-box) displacement))]))))
+      (aabb/make (vec/+ (aabb/mini hittable-output-box) displacement)
+                 (vec/+ (aabb/maxi hittable-output-box) displacement)))))
 
 (defrecord RotateY [hittable angle]
   Hittable
@@ -336,8 +333,7 @@
           cos-theta (math/cos radians)
           bbox-min (atom [##Inf ##Inf ##Inf])
           bbox-max (atom [##-Inf ##-Inf ##-Inf])
-          {has-bbox :has-bbox
-           bbox :bbox} (bounding-box hittable 0 1)]
+          bbox (bounding-box hittable 0 1)]
       (doseq [i (range 2)]
         (doseq [j (range 2)]
           (doseq [k (range 2)]
@@ -351,9 +347,9 @@
                   tester [new-x y new-z]]
               (doseq [c (range 3)]
                 (do
-                  (swap! bbox-min assoc c (min (get bbox-min c) (get tester c)))
-                  (swap! bbox-max assoc c (max (get bbox-max c) (get tester c)))))))))
-      {:has-bbox has-bbox :output-box (aabb/make @bbox-min @bbox-max)})))
+                  (swap! bbox-min assoc c (min (get @bbox-min c) (get tester c)))
+                  (swap! bbox-max assoc c (max (get @bbox-max c) (get tester c)))))))))
+      (aabb/make @bbox-min @bbox-max))))
 
 (defrecord ConstantMedium [hittable density texture]
   Hittable

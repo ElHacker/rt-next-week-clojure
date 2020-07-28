@@ -16,35 +16,35 @@
 
 (defn hit [aabb r tmin tmax]
   (loop [i 0]
-    (let [idx #(get % i)
-          th0 (t-at-hitpoint (idx (mini aabb)) (idx (ray/origin r)) (idx (ray/direction r)))
-          th1 (t-at-hitpoint (idx (maxi aabb)) (idx (ray/origin r)) (idx (ray/direction r)))
-          t0 (min th0 th1)
-          t1 (max th0 th1)
-          tmin (max t0 tmin)
-          tmax (max t1 tmax)]
-      (if (< i 3)
+    (if (< i 3)
+      (let [th0 (t-at-hitpoint (get (mini aabb) i) (get (ray/origin r) i) (get (ray/direction r) i))
+            th1 (t-at-hitpoint (get (maxi aabb) i) (get (ray/origin r) i) (get (ray/direction r) i))
+            t0 (min th0 th1)
+            t1 (max th0 th1)
+            tmin (max t0 tmin)
+            tmax (min t1 tmax)]
         (if (<= tmax tmin)
           false
-          (recur (inc i)))
-        true))))
+          (recur (inc i))))
+      true)))
 
-; Optimized version of the function above proposed by Andrew Kesler at Pixar.
+; Optimized version of the function above proposed by Andrew Kensler at Pixar.
 (defn hit-pixar [aabb r tmin tmax]
   (loop [i 0]
-    (let [idx #(get % i)
-          invD (/ 1.0 (idx (ray/direction r)))
-          t0 (* (- (idx (mini aabb)) (idx (ray/origin r))) invD)
-          t1 (* (- (idx (maxi aabb)) (idx (ray/origin r))) invD)
-          t0 (if (neg? invD) t1 t0)
-          t1 (if (neg? invD) t0 t1)
-          tmin (if (> t0 tmin) t0 tmin)
-          tmax (if (< t1 tmax) t1 tmax)]
-      (if (< i 3)
-        (if (<= tmax tmin)
+    (if (< i 3)
+      (let [invD (/ 1.0 (get (ray/direction r) i))
+            t0 (* (- (get (mini aabb) i) (get (ray/origin r) i)) invD)
+            t1 (* (- (get (maxi aabb) i) (get (ray/origin r) i)) invD)
+            tempt0 t0
+            tempt1 t1
+            t0 (if (neg? invD) tempt1 tempt0)
+            t1 (if (neg? invD) tempt0 tempt1)
+            tmini (if (> t0 tmin) t0 tmin)
+            tmaxi (if (< t1 tmax) t1 tmax)]
+        (if (> tmaxi tmini)
           false
-          (recur (inc i)))
-        true))))
+          (recur (inc i))))
+      true)))
 
 (defn surrounding-box [box0 box1]
   (let [small [(min (vec/x (mini box0))
@@ -58,4 +58,5 @@
              (max (vec/y (maxi box0))
                   (vec/y (maxi box1)))
              (max (vec/z (maxi box0))
-                  (vec/z (maxi box1)))]]))
+                  (vec/z (maxi box1)))]]
+    (make small big)))
