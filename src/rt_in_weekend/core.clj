@@ -74,7 +74,7 @@
     (swap! world conj (hittable/->Sphere [4 1 0] 1.0 (material/->Metal [0.7 0.6 0.5] 0.0)))
     @world))
 
-(defn final-scene []
+(defn final-scene-weekend []
   (let [aspect-ratio (/ 16.0 9.0)
         image-width 400
         image-height (int (/ image-width aspect-ratio))
@@ -280,6 +280,83 @@
                 (pixel-line ir ig ib))
               "./images/cornell-smoke-bvh")))
 
+(defn make-final-world []
+  (let [objects (atom [])]
+    (do
+      (let [boxes1 (atom [])
+            ground (material/->Lambertian (texture/->SolidColor [0.48 0.83 0.53]))
+            boxes-per-side 20]
+        (do
+          (doseq [i (range boxes-per-side)]
+            (doseq [j (range boxes-per-side)]
+              (let [w 100.0
+                    x0 (+ -1000.0 (* i w))
+                    z0 (+ -1000.0 (* j w))
+                    y0 0.0
+                    x1 (+ x0 w)
+                    y1 (util/rand-in-range 1 101)
+                    z1 (+ z0 w)]
+                (swap! boxes1 conj (hittable/->Box [x0 y0 z0] [x1 y1 z1] ground)))))
+          (swap! objects conj (hittable/bvh-node-split-build @boxes1 0 1 0 0))))
+      (let [light (material/->DiffuseLight (texture/->SolidColor [7 7 7]))
+            rect-light (hittable/->XZRect 123 423 147 412 554 light)]
+        (swap! objects conj rect-light))
+      (let [center1 [400 400 200]
+            center2 (vec/+ center1 [30 0 0])
+            moving-sphere-material (material/->Lambertian (texture/->SolidColor [0.7 0.3 0.1]))
+            moving-sphere (hittable/->MovingSphere center1 center2 0 1 50 moving-sphere-material)]
+        (swap! objects conj moving-sphere))
+      (let [dialectric-sphere (hittable/->Sphere [260 150 45] 50 (material/->Dialectric 1.5))
+            metal-sphere (hittable/->Sphere [0 150 145] 50 (material/->Metal [0.8 0.8 0.9] 10.0))]
+        (swap! objects conj dialectric-sphere metal-sphere))
+      (let [boundary1 (hittable/->Sphere [360 150 145] 70 (material/->Dialectric 1.5))
+            constant-medium1 (hittable/->ConstantMedium boundary1 0.2 (texture/->SolidColor [0.2 0.4 0.9]))
+            boundary2 (hittable/->Sphere [0 0 0] 5000 (material/->Dialectric 1.5))
+            constant-medium2 (hittable/->ConstantMedium boundary2 0.0001 (texture/->SolidColor [1 1 1]))]
+        (swap! objects conj boundary1 constant-medium1 constant-medium2))
+      (let [emat (material/->Lambertian (texture/->ImageTexture "./images/earthmap.jpg"))
+            sphere-earth (hittable/->Sphere [400 200 400] 100 emat)
+            pertext (texture/->NoiseTexture 0.1)
+            sphere-noise (hittable/->Sphere [220 280 300] 80 (material/->Lambertian pertext))]
+        (swap! objects conj sphere-earth sphere-noise))
+      (let [boxes2 (atom [])
+            white (material/->Lambertian (texture/->SolidColor [0.73 0.73 0.73]))
+            sphere-count 1000]
+        (do
+          (doseq [j (range 0 sphere-count)]
+            (swap! boxes2 conj (hittable/->Sphere (util/random-vec 0 165) 10 white)))
+          (swap! objects conj (hittable/->Translate
+                                (hittable/->RotateY
+                                  (hittable/bvh-node-split-build @boxes2 0 sphere-count 0.0 1.0)
+                                  15)
+                                [-100 270 395]))))
+      @objects)))
+
+(defn final-scene []
+  (let [aspect-ratio 1.0
+        image-width 800
+        image-height (int (/ image-width aspect-ratio))
+        num-samples 15
+        max-depth 10
+        lookfrom [478 278 -600]
+        lookat [278 278 0]
+        vup [0 1 0]
+        dist-to-focus 10.0
+        aperture 0.0
+        world (make-final-world)
+        cam (camera/make lookfrom lookat vup 40 aspect-ratio aperture dist-to-focus 0.0 1.0)
+        background [0 0 0]]
+    (raytrace image-width image-height
+              (for [j (range (dec image-height) -1 -1)
+                    i (range 0 image-width)
+                    :let [color (evolve-color world cam background image-width image-height num-samples i j max-depth)
+                          corrected-color (map #(Math/sqrt %) color)
+                          ir (int (* 255.999 (vec/x corrected-color)))
+                          ig (int (* 255.999 (vec/y corrected-color)))
+                          ib (int (* 255.999 (vec/z corrected-color)))]]
+                (pixel-line ir ig ib))
+              "./images/final-scene-next-week")))
+
 (defn create-ppm []
   (let [image-width 256,
         image-height 256,
@@ -294,4 +371,4 @@
         ppm (str header body)]
     (img/save-ppm ppm "./images/image")))
 
-(time (cornell-box-scene))
+(time (final-scene))

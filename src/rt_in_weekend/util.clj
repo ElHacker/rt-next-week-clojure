@@ -20,3 +20,6 @@
     (< value mini) mini
     (> value maxi) maxi
     :else value))
+
+(defn random-vec [lower upper]
+  [(rand-in-range lower upper) (rand-in-range lower upper) (rand-in-range lower upper)])
