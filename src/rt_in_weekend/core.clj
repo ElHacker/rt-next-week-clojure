@@ -336,8 +336,8 @@
   (let [aspect-ratio 1.0
         image-width 800
         image-height (int (/ image-width aspect-ratio))
-        num-samples 15
-        max-depth 10
+        num-samples 5
+        max-depth 2
         lookfrom [478 278 -600]
         lookat [278 278 0]
         vup [0 1 0]

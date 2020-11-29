@@ -11,7 +11,6 @@
   (bounding-box [this t0 t1])
   (center [this timestamp]))
 
-; TODO(elhacker): Update all the callers to hit-record to provide a function for uv
 (defn hit-record
   ([r t center radius material uvfn]
    (let [p (ray/point-at r t)
@@ -66,15 +65,16 @@
           a (vec/length-squared (ray/direction r))
           half-b (vec/dot oc (ray/direction r))
           c (- (vec/length-squared oc) (* (:radius this) (:radius this)))
-          discriminant (- (* half-b half-b) (* a c))]
+          discriminant (- (* half-b half-b) (* a c))
+          uvfn #(util/get-sphere-uv (vec// (vec/- % (center this (:timestamp r))) (:radius this)))]
       (when (pos? discriminant)
         (let [root (Math/sqrt discriminant)
               temp (/ (- (- half-b) root) a)]
           (if (and (< temp t-max) (> temp t-min))
-            (hit-record r temp (center  this (:timestamp r)) (:radius this) (:material this))
+            (hit-record r temp (center  this (:timestamp r)) (:radius this) (:material this) uvfn)
             (let [temp (/ (+ (- half-b) root) a)]
               (when (and (< temp t-max) (> temp t-min))
-                (hit-record r temp (center this (:timestamp r)) (:radius this) (:material this)))))))))
+                (hit-record r temp (center this (:timestamp r)) (:radius this) (:material this) uvfn))))))))
 
   (bounding-box [this t0 t1]
     (let [box0 (aabb/make (vec/- (center this t0) [(:radius this) (:radius this) (:radius this)])
@@ -217,18 +217,18 @@
                                    (reset! left (get hittable-objects (inc start)))
                                    (reset! right (get hittable-objects start))))
             :else (do
-                    (let [sorted (sort comparator-fn hittable-objects)
-                          mid (/ (+ start object-span) 2)]
+                    (let [sorted (vec (sort comparator-fn hittable-objects))
+                          mid (+ start (quot object-span 2))]
                       (do
                         (reset! left (bvh-node-split-build sorted start mid time0 time1))
                         (reset! right (bvh-node-split-build sorted mid end time0 time1))))))
-      (let [box-left (bounding-box @left time0 time1)
-            box-right (bounding-box @right time0 time1)]
-        (if (or (not box-left)
-                (not box-right))
-          (throw (Exception. "No bounding box in bvh-node constructor"))
-          ; Return an instance of bvh-node
-          (->bvh-node hittable-objects start end time0 time1 @left @right (aabb/surrounding-box box-left box-right)))))))
+      (if (or (nil? @left)
+              (nil? @right))
+        (println "Error: No bounding box in bvh-node constructor"))
+      (let [box-left (if (some? @left) (bounding-box @left time0 time1) nil)
+            box-right (if (some? @right) (bounding-box @right time0 time1) nil)]
+        ; Return an instance of bvh-node
+        (->bvh-node hittable-objects start end time0 time1 @left @right (aabb/surrounding-box box-left box-right))))))
 
 (defn hittable-list-bounding-box [world t0 t1 out-box]
   (if (empty? world)
